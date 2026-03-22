@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>GravityVerse Admin Panel</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=DM+Sans:wght@300;400;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --sky: #0ea5e9; --sky-glow: #38bdf8;
+    --navy: #0a0f1e; --navy2: #0d1530; --navy3: #111827;
+    --white: #f0f8ff; --muted: #94a3b8;
+    --accent: #f59e0b; --green: #10b981; --red: #ef4444;
+    --border: rgba(14,165,233,0.15);
+    --card: rgba(14,165,233,0.05);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--navy); color: var(--white); font-family: 'DM Sans', sans-serif; min-height: 100vh; }
+
+  /* ── LOGIN ── */
+  #login-screen {
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    background: radial-gradient(ellipse at 30% 50%, rgba(14,165,233,0.08), transparent 60%), var(--navy);
+  }
+  .login-box {
+    background: var(--navy2); border: 1px solid var(--border);
+    border-radius: 16px; padding: 2.5rem; width: 100%; max-width: 380px;
+    box-shadow: 0 0 60px rgba(14,165,233,0.1);
+    animation: fadeUp 0.6s ease both;
+  }
+  .login-logo {
+    font-family: 'Orbitron', sans-serif; font-size: 1.3rem; font-weight: 900;
+    color: var(--sky); text-align: center; margin-bottom: 0.3rem;
+  }
+  .login-sub { text-align: center; font-size: 0.8rem; color: var(--muted); margin-bottom: 2rem; letter-spacing: 0.1em; text-transform: uppercase; font-family: 'JetBrains Mono', monospace; }
+  .field { margin-bottom: 1.2rem; }
+  .field label { display: block; font-size: 0.78rem; color: var(--muted); margin-bottom: 0.4rem; letter-spacing: 0.08em; text-transform: uppercase; }
+  .field input {
+    width: 100%; background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border); border-radius: 8px;
+    padding: 0.75rem 1rem; color: var(--white); font-family: 'JetBrains Mono', monospace; font-size: 0.9rem;
+    outline: none; transition: border-color 0.2s;
+  }
+  .field input:focus { border-color: var(--sky); }
+  .login-btn {
+    width: 100%; background: var(--sky); color: var(--navy);
+    font-family: 'Orbitron', sans-serif; font-size: 0.78rem; font-weight: 700;
+    letter-spacing: 0.1em; padding: 0.85rem; border-radius: 8px;
+    border: none; cursor: pointer; transition: all 0.2s;
+    box-shadow: 0 0 20px rgba(14,165,233,0.3);
+  }
+  .login-btn:hover { background: var(--sky-glow); transform: translateY(-1px); }
+  .login-error { color: var(--red); font-size: 0.8rem; text-align: center; margin-top: 0.8rem; display: none; }
+
+  /* ── ADMIN LAYOUT ── */
+  #admin-screen { display: none; }
+  .admin-nav {
+    background: rgba(10,15,30,0.95); backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1rem 2rem; position: sticky; top: 0; z-index: 100;
+  }
+  .admin-logo { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 1rem; color: var(--sky); }
+  .admin-logo span { color: var(--muted); font-size: 0.7rem; margin-left: 0.5rem; font-family: 'JetBrains Mono', monospace; }
+  .logout-btn {
+    background: transparent; border: 1px solid var(--border); color: var(--muted);
+    font-size: 0.75rem; padding: 0.4rem 1rem; border-radius: 6px; cursor: pointer;
+    font-family: 'JetBrains Mono', monospace; transition: all 0.2s;
+  }
+  .logout-btn:hover { border-color: var(--red); color: var(--red); }
+
+  .admin-body { display: flex; min-height: calc(100vh - 60px); }
+
+  /* sidebar */
+  .sidebar {
+    width: 220px; background: var(--navy2); border-right: 1px solid var(--border);
+    padding: 1.5rem 1rem; flex-shrink: 0;
+  }
+  .sidebar-label { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.75rem; padding-left: 0.5rem; }
+  .sidebar-item {
+    display: flex; align-items: center; gap: 0.6rem;
+    padding: 0.65rem 0.75rem; border-radius: 8px;
+    font-size: 0.88rem; font-weight: 600; cursor: pointer;
+    color: var(--muted); transition: all 0.15s; margin-bottom: 0.2rem;
+    border: 1px solid transparent;
+  }
+  .sidebar-item:hover { background: var(--card); color: var(--white); }
+  .sidebar-item.active { background: rgba(14,165,233,0.1); color: var(--sky); border-color: rgba(14,165,233,0.2); }
+  .sidebar-icon { font-size: 1rem; }
+
+  /* main content */
+  .main-content { flex: 1; padding: 2rem; overflow-y: auto; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  .page-title { font-family: 'Orbitron', sans-serif; font-size: 1.4rem; font-weight: 700; margin-bottom: 0.4rem; }
+  .page-sub { color: var(--muted); font-size: 0.88rem; margin-bottom: 2rem; }
+
+  /* cards */
+  .admin-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 1.5rem; margin-bottom: 1.2rem;
+  }
+  .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.2rem; }
+  .card-title { font-weight: 700; font-size: 0.95rem; display: flex; align-items: center; gap: 0.5rem; }
+
+  /* form elements */
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+  .form-row.single { grid-template-columns: 1fr; }
+  .form-group { display: flex; flex-direction: column; gap: 0.4rem; }
+  .form-group label { font-size: 0.75rem; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; }
+  .form-group input, .form-group select, .form-group textarea {
+    background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+    border-radius: 8px; padding: 0.65rem 0.9rem;
+    color: var(--white); font-family: 'DM Sans', sans-serif; font-size: 0.88rem;
+    outline: none; transition: border-color 0.2s;
+  }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--sky); }
+  .form-group textarea { resize: vertical; min-height: 80px; }
+  .form-group select option { background: var(--navy2); }
+
+  /* buttons */
+  .btn { font-family: 'Orbitron', sans-serif; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; padding: 0.6rem 1.3rem; border-radius: 6px; border: none; cursor: pointer; transition: all 0.15s; }
+  .btn-primary { background: var(--sky); color: var(--navy); }
+  .btn-primary:hover { background: var(--sky-glow); transform: translateY(-1px); }
+  .btn-danger { background: rgba(239,68,68,0.1); color: var(--red); border: 1px solid rgba(239,68,68,0.2); }
+  .btn-danger:hover { background: rgba(239,68,68,0.2); }
+  .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+  .btn-ghost:hover { border-color: var(--sky); color: var(--sky); }
+
+  /* items list */
+  .items-list { display: flex; flex-direction: column; gap: 0.75rem; }
+  .item-row {
+    display: flex; align-items: center; gap: 1rem;
+    background: rgba(255,255,255,0.02); border: 1px solid var(--border);
+    border-radius: 10px; padding: 0.9rem 1rem;
+    transition: border-color 0.15s;
+  }
+  .item-row:hover { border-color: rgba(14,165,233,0.25); }
+  .item-icon { font-size: 1.4rem; flex-shrink: 0; }
+  .item-info { flex: 1; min-width: 0; }
+  .item-title { font-weight: 600; font-size: 0.88rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .item-meta { font-size: 0.75rem; color: var(--muted); margin-top: 0.15rem; }
+  .item-tag {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.62rem;
+    padding: 0.2rem 0.5rem; border-radius: 4px;
+    background: rgba(14,165,233,0.1); color: var(--sky);
+    flex-shrink: 0;
+  }
+  .item-actions { display: flex; gap: 0.4rem; flex-shrink: 0; }
+  .icon-btn {
+    width: 30px; height: 30px; border-radius: 6px; border: 1px solid var(--border);
+    background: transparent; cursor: pointer; font-size: 0.8rem;
+    display: flex; align-items: center; justify-content: center; transition: all 0.15s;
+  }
+  .icon-btn:hover { border-color: var(--sky); background: rgba(14,165,233,0.1); }
+  .icon-btn.del:hover { border-color: var(--red); background: rgba(239,68,68,0.1); }
+
+  /* stats row */
+  .stats-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+  .stat-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 1.2rem;
+  }
+  .stat-num { font-family: 'Orbitron', sans-serif; font-size: 2rem; font-weight: 900; color: var(--sky); }
+  .stat-label { font-size: 0.75rem; color: var(--muted); margin-top: 0.3rem; text-transform: uppercase; letter-spacing: 0.06em; }
+
+  /* toast */
+  .toast {
+    position: fixed; bottom: 2rem; right: 2rem; z-index: 999;
+    background: var(--green); color: var(--navy);
+    font-family: 'Orbitron', sans-serif; font-size: 0.75rem; font-weight: 700;
+    padding: 0.8rem 1.5rem; border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(16,185,129,0.4);
+    transform: translateY(100px); opacity: 0;
+    transition: all 0.3s ease;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+
+  /* modal */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none; transition: opacity 0.2s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal {
+    background: var(--navy2); border: 1px solid var(--border);
+    border-radius: 16px; padding: 2rem; width: 100%; max-width: 480px;
+    transform: scale(0.95); transition: transform 0.2s;
+  }
+  .modal-overlay.open .modal { transform: scale(1); }
+  .modal-title { font-family: 'Orbitron', sans-serif; font-size: 1rem; font-weight: 700; margin-bottom: 1.5rem; }
+  .modal-actions { display: flex; gap: 0.75rem; margin-top: 1.5rem; justify-content: flex-end; }
+
+  /* code output */
+  .code-box {
+    background: rgba(0,0,0,0.4); border: 1px solid var(--border);
+    border-radius: 8px; padding: 1rem; font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem; color: var(--sky-glow); line-height: 1.7;
+    max-height: 300px; overflow-y: auto; white-space: pre-wrap; word-break: break-all;
+    margin-top: 1rem;
+  }
+
+  @keyframes fadeUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+  ::-webkit-scrollbar { width: 5px; } ::-webkit-scrollbar-track { background: var(--navy); } ::-webkit-scrollbar-thumb { background: rgba(14,165,233,0.3); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">GravityVerse</div>
+    <div class="login-sub">Admin Panel</div>
+    <div class="field">
+      <label>Username</label>
+      <input type="text" id="login-user" placeholder="admin" />
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input type="password" id="login-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()" />
+    </div>
+    <button class="login-btn" onclick="doLogin()">LOGIN →</button>
+    <div class="login-error" id="login-error">❌ Invalid credentials. Try again.</div>
+  </div>
+</div>
+
+<!-- ADMIN -->
+<div id="admin-screen">
+  <nav class="admin-nav">
+    <div class="admin-logo">GravityVerse <span>// ADMIN</span></div>
+    <button class="logout-btn" onclick="doLogout()">⏻ Logout</button>
+  </nav>
+  <div class="admin-body">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-label">Menu</div>
+      <div class="sidebar-item active" onclick="showTab('dashboard', this)"><span class="sidebar-icon">📊</span> Dashboard</div>
+      <div class="sidebar-item" onclick="showTab('videos', this)"><span class="sidebar-icon">🎬</span> Videos</div>
+      <div class="sidebar-item" onclick="showTab('materials', this)"><span class="sidebar-icon">📄</span> Materials</div>
+      <div class="sidebar-item" onclick="showTab('mcq', this)"><span class="sidebar-icon">❓</span> MCQ</div>
+      <div class="sidebar-item" onclick="showTab('export', this)"><span class="sidebar-icon">💾</span> Export Code</div>
+    </div>
+
+    <!-- Main -->
+    <div class="main-content">
+
+      <!-- DASHBOARD -->
+      <div class="tab-panel active" id="tab-dashboard">
+        <h1 class="page-title">Dashboard</h1>
+        <p class="page-sub">Overview of your GravityVerse content hub.</p>
+        <div class="stats-row">
+          <div class="stat-card"><div class="stat-num" id="stat-videos">0</div><div class="stat-label">Videos</div></div>
+          <div class="stat-card"><div class="stat-num" id="stat-materials">0</div><div class="stat-label">Study Cards</div></div>
+          <div class="stat-card"><div class="stat-num" id="stat-mcq">0</div><div class="stat-label">MCQ Questions</div></div>
+        </div>
+        <div class="admin-card">
+          <div class="card-header"><div class="card-title">🚀 Quick Actions</div></div>
+          <div style="display:flex;gap:0.75rem;flex-wrap:wrap;">
+            <button class="btn btn-primary" onclick="showTab('videos', document.querySelectorAll('.sidebar-item')[1]); openModal('video-modal')">+ Add Video</button>
+            <button class="btn btn-ghost" onclick="showTab('materials', document.querySelectorAll('.sidebar-item')[2]); openModal('material-modal')">+ Add Material</button>
+            <button class="btn btn-ghost" onclick="showTab('mcq', document.querySelectorAll('.sidebar-item')[3]); openModal('mcq-modal')">+ Add MCQ</button>
+            <button class="btn btn-ghost" onclick="showTab('export', document.querySelectorAll('.sidebar-item')[4])">💾 Export Site</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIDEOS -->
+      <div class="tab-panel" id="tab-videos">
+        <h1 class="page-title">Videos</h1>
+        <p class="page-sub">Manage your YouTube video links shown on the website.</p>
+        <div class="admin-card">
+          <div class="card-header">
+            <div class="card-title">🎬 Video List</div>
+            <button class="btn btn-primary" onclick="openModal('video-modal')">+ Add Video</button>
+          </div>
+          <div class="items-list" id="video-list"></div>
+        </div>
+      </div>
+
+      <!-- MATERIALS -->
+      <div class="tab-panel" id="tab-materials">
+        <h1 class="page-title">Study Materials</h1>
+        <p class="page-sub">Manage brain map cards and downloadable PDFs.</p>
+        <div class="admin-card">
+          <div class="card-header">
+            <div class="card-title">📄 Materials List</div>
+            <button class="btn btn-primary" onclick="openModal('material-modal')">+ Add Material</button>
+          </div>
+          <div class="items-list" id="material-list"></div>
+        </div>
+      </div>
+
+      <!-- MCQ -->
+      <div class="tab-panel" id="tab-mcq">
+        <h1 class="page-title">MCQ Questions</h1>
+        <p class="page-sub">Add and manage practice questions for students.</p>
+        <div class="admin-card">
+          <div class="card-header">
+            <div class="card-title">❓ Question Bank</div>
+            <button class="btn btn-primary" onclick="openModal('mcq-modal')">+ Add Question</button>
+          </div>
+          <div class="items-list" id="mcq-list"></div>
+        </div>
+      </div>
+
+      <!-- EXPORT -->
+      <div class="tab-panel" id="tab-export">
+        <h1 class="page-title">Export Site Code</h1>
+        <p class="page-sub">Generate updated index.html code with all your content. Copy and paste it into GitHub.</p>
+        <div class="admin-card">
+          <div class="card-header"><div class="card-title">💾 Generate & Export</div></div>
+          <p style="font-size:0.88rem;color:var(--muted);margin-bottom:1rem;">Click the button below to generate your updated website code with all videos, materials, and MCQs you've added.</p>
+          <button class="btn btn-primary" onclick="generateCode()">⚡ Generate Site Code</button>
+          <div id="code-output" style="display:none;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-top:1.5rem;margin-bottom:0.5rem;">
+              <span style="font-size:0.8rem;color:var(--green);font-weight:600;">✅ Code generated! Copy and paste into GitHub as index.html</span>
+              <button class="btn btn-ghost" onclick="copyCode()">📋 Copy All</button>
+            </div>
+            <div class="code-box" id="code-box"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- VIDEO MODAL -->
+<div class="modal-overlay" id="video-modal">
+  <div class="modal">
+    <div class="modal-title">🎬 Add / Edit Video</div>
+    <input type="hidden" id="video-edit-id" value="-1"/>
+    <div class="form-row">
+      <div class="form-group"><label>Video Title</label><input type="text" id="v-title" placeholder="e.g. Moment of Inertia Explained"/></div>
+      <div class="form-group"><label>Topic / Chapter</label><input type="text" id="v-topic" placeholder="e.g. Rotational Motion"/></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Class</label>
+        <select id="v-class"><option value="Class 11">Class 11</option><option value="Class 12">Class 12</option></select>
+      </div>
+      <div class="form-group"><label>Duration</label><input type="text" id="v-duration" placeholder="e.g. 15 min"/></div>
+    </div>
+    <div class="form-row single">
+      <div class="form-group"><label>YouTube URL</label><input type="text" id="v-url" placeholder="https://youtube.com/watch?v=..."/></div>
+    </div>
+    <div class="form-row single">
+      <div class="form-group"><label>Emoji Icon</label><input type="text" id="v-icon" placeholder="e.g. 🌀"/></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('video-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveVideo()">Save Video</button>
+    </div>
+  </div>
+</div>
+
+<!-- MATERIAL MODAL -->
+<div class="modal-overlay" id="material-modal">
+  <div class="modal">
+    <div class="modal-title">📄 Add / Edit Material</div>
+    <input type="hidden" id="mat-edit-id" value="-1"/>
+    <div class="form-row">
+      <div class="form-group"><label>Title</label><input type="text" id="m-title" placeholder="e.g. Rotational Motion"/></div>
+      <div class="form-group"><label>Class</label>
+        <select id="m-class"><option value="Class 11">Class 11</option><option value="Class 12">Class 12</option></select>
+      </div>
+    </div>
+    <div class="form-row single">
+      <div class="form-group"><label>Description</label><textarea id="m-desc" placeholder="Brief description of what's covered..."></textarea></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>PDF URL / Filename</label><input type="text" id="m-url" placeholder="e.g. rotational-motion.pdf"/></div>
+      <div class="form-group"><label>Emoji Icon</label><input type="text" id="m-icon" placeholder="e.g. 🌀"/></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('material-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveMaterial()">Save Material</button>
+    </div>
+  </div>
+</div>
+
+<!-- MCQ MODAL -->
+<div class="modal-overlay" id="mcq-modal">
+  <div class="modal">
+    <div class="modal-title">❓ Add / Edit MCQ</div>
+    <input type="hidden" id="mcq-edit-id" value="-1"/>
+    <div class="form-row">
+      <div class="form-group"><label>Topic</label><input type="text" id="q-topic" placeholder="e.g. Rotational Motion"/></div>
+      <div class="form-group"><label>Class</label>
+        <select id="q-class"><option value="Class 11">Class 11</option><option value="Class 12">Class 12</option></select>
+      </div>
+    </div>
+    <div class="form-row single">
+      <div class="form-group"><label>Question</label><textarea id="q-text" placeholder="Enter the question..."></textarea></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Option A</label><input type="text" id="q-a"/></div>
+      <div class="form-group"><label>Option B</label><input type="text" id="q-b"/></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Option C</label><input type="text" id="q-c"/></div>
+      <div class="form-group"><label>Option D</label><input type="text" id="q-d"/></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Correct Answer</label>
+        <select id="q-correct"><option value="0">A</option><option value="1">B</option><option value="2">C</option><option value="3">D</option></select>
+      </div>
+    </div>
+    <div class="form-row single">
+      <div class="form-group"><label>Explanation</label><textarea id="q-explanation" placeholder="Why is this the correct answer?"></textarea></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('mcq-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveMCQ()">Save Question</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── AUTH ──
+const ADMIN_USER = 'yogesh';
+const ADMIN_PASS = 'gravityverse2026';
+
+function doLogin() {
+  const u = document.getElementById('login-user').value.trim();
+  const p = document.getElementById('login-pass').value.trim();
+  if (u === ADMIN_USER && p === ADMIN_PASS) {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('admin-screen').style.display = 'block';
+    renderAll();
+  } else {
+    document.getElementById('login-error').style.display = 'block';
+  }
+}
+function doLogout() {
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('admin-screen').style.display = 'none';
+  document.getElementById('login-user').value = '';
+  document.getElementById('login-pass').value = '';
+}
+
+// ── DATA ──
+let data = {
+  videos: [
+    { id: 1, title: "Moment of Inertia — Complete Explanation", topic: "Rotational Motion", cls: "Class 12", duration: "15 min", url: "https://youtube.com/@GravityVerse", icon: "🌀" },
+    { id: 2, title: "Equations of Motion — Derivation & Problems", topic: "Kinematics", cls: "Class 11", duration: "18 min", url: "https://youtube.com/@GravityVerse", icon: "📐" },
+    { id: 3, title: "Bernoulli's Principle — Applications & Numericals", topic: "Fluid Mechanics", cls: "Class 11", duration: "20 min", url: "https://youtube.com/@GravityVerse", icon: "💧" },
+  ],
+  materials: [
+    { id: 1, title: "Rotational Motion", cls: "Class 12", desc: "Complete brain map covering moment of inertia, torque, angular momentum.", url: "rotational-motion.pdf", icon: "🌀" },
+    { id: 2, title: "Kinematics", cls: "Class 11", desc: "Motion in a straight line, projectile motion, and relative velocity.", url: "kinematics.pdf", icon: "📏" },
+    { id: 3, title: "Mechanical Properties of Fluids", cls: "Class 11", desc: "Pressure, Bernoulli's principle, viscosity, and surface tension.", url: "fluids.pdf", icon: "💧" },
+  ],
+  mcqs: [
+    { id: 1, topic: "Rotational Motion", cls: "Class 12", q: "A solid sphere and a hollow sphere of the same mass and radius roll down an inclined plane. Which reaches the bottom first?", opts: ["Hollow sphere","Solid sphere","Both same","Depends on angle"], correct: 1, explanation: "Solid sphere has smaller moment of inertia (2/5 MR²) so it rolls faster." },
+    { id: 2, topic: "Kinematics", cls: "Class 11", q: "A ball thrown upward at 20 m/s. Max height? (g=10)", opts: ["10 m","20 m","30 m","40 m"], correct: 1, explanation: "h = u²/2g = 400/20 = 20 m" },
+  ],
+  nextId: 10
+};
+
+// ── TABS ──
+function showTab(name, el) {
+  document.querySelectorAll('.tab-panel').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.sidebar-item').forEach(s => s.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  el.classList.add('active');
+  updateStats();
+}
+
+// ── RENDER ──
+function renderAll() { renderVideos(); renderMaterials(); renderMCQs(); updateStats(); }
+
+function updateStats() {
+  document.getElementById('stat-videos').textContent = data.videos.length;
+  document.getElementById('stat-materials').textContent = data.materials.length;
+  document.getElementById('stat-mcq').textContent = data.mcqs.length;
+}
+
+function renderVideos() {
+  const list = document.getElementById('video-list');
+  if (!data.videos.length) { list.innerHTML = '<p style="color:var(--muted);font-size:0.85rem;padding:1rem 0;">No videos yet. Add your first one!</p>'; return; }
+  list.innerHTML = data.videos.map(v => `
+    <div class="item-row">
+      <div class="item-icon">${v.icon}</div>
+      <div class="item-info">
+        <div class="item-title">${v.title}</div>
+        <div class="item-meta">${v.topic} · ${v.duration}</div>
+      </div>
+      <div class="item-tag">${v.cls}</div>
+      <div class="item-actions">
+        <button class="icon-btn" onclick="editVideo(${v.id})" title="Edit">✏️</button>
+        <button class="icon-btn del" onclick="deleteItem('videos',${v.id})" title="Delete">🗑️</button>
+      </div>
+    </div>`).join('');
+}
+
+function renderMaterials() {
+  const list = document.getElementById('material-list');
+  if (!data.materials.length) { list.innerHTML = '<p style="color:var(--muted);font-size:0.85rem;padding:1rem 0;">No materials yet.</p>'; return; }
+  list.innerHTML = data.materials.map(m => `
+    <div class="item-row">
+      <div class="item-icon">${m.icon}</div>
+      <div class="item-info">
+        <div class="item-title">${m.title}</div>
+        <div class="item-meta">${m.desc.substring(0,60)}...</div>
+      </div>
+      <div class="item-tag">${m.cls}</div>
+      <div class="item-actions">
+        <button class="icon-btn" onclick="editMaterial(${m.id})" title="Edit">✏️</button>
+        <button class="icon-btn del" onclick="deleteItem('materials',${m.id})" title="Delete">🗑️</button>
+      </div>
+    </div>`).join('');
+}
+
+function renderMCQs() {
+  const list = document.getElementById('mcq-list');
+  if (!data.mcqs.length) { list.innerHTML = '<p style="color:var(--muted);font-size:0.85rem;padding:1rem 0;">No questions yet.</p>'; return; }
+  list.innerHTML = data.mcqs.map(q => `
+    <div class="item-row">
+      <div class="item-icon">❓</div>
+      <div class="item-info">
+        <div class="item-title">${q.q.substring(0,70)}${q.q.length>70?'...':''}</div>
+        <div class="item-meta">${q.topic} · Answer: ${['A','B','C','D'][q.correct]}</div>
+      </div>
+      <div class="item-tag">${q.cls}</div>
+      <div class="item-actions">
+        <button class="icon-btn" onclick="editMCQ(${q.id})" title="Edit">✏️</button>
+        <button class="icon-btn del" onclick="deleteItem('mcqs',${q.id})" title="Delete">🗑️</button>
+      </div>
+    </div>`).join('');
+}
+
+// ── MODALS ──
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(m => m.addEventListener('click', e => { if(e.target===m) m.classList.remove('open'); }));
+
+// ── VIDEOS CRUD ──
+function saveVideo() {
+  const id = parseInt(document.getElementById('video-edit-id').value);
+  const v = {
+    id: id === -1 ? data.nextId++ : id,
+    title: document.getElementById('v-title').value.trim(),
+    topic: document.getElementById('v-topic').value.trim(),
+    cls: document.getElementById('v-class').value,
+    duration: document.getElementById('v-duration').value.trim(),
+    url: document.getElementById('v-url').value.trim(),
+    icon: document.getElementById('v-icon').value.trim() || '🎬'
+  };
+  if (!v.title || !v.url) { showToast('Please fill title and URL!', true); return; }
+  if (id === -1) data.videos.push(v);
+  else { const i = data.videos.findIndex(x=>x.id===id); data.videos[i] = v; }
+  closeModal('video-modal'); renderVideos(); updateStats();
+  document.getElementById('video-edit-id').value = '-1';
+  showToast('✅ Video saved!');
+}
+function editVideo(id) {
+  const v = data.videos.find(x=>x.id===id);
+  document.getElementById('video-edit-id').value = id;
+  document.getElementById('v-title').value = v.title;
+  document.getElementById('v-topic').value = v.topic;
+  document.getElementById('v-class').value = v.cls;
+  document.getElementById('v-duration').value = v.duration;
+  document.getElementById('v-url').value = v.url;
+  document.getElementById('v-icon').value = v.icon;
+  openModal('video-modal');
+}
+
+// ── MATERIALS CRUD ──
+function saveMaterial() {
+  const id = parseInt(document.getElementById('mat-edit-id').value);
+  const m = {
+    id: id === -1 ? data.nextId++ : id,
+    title: document.getElementById('m-title').value.trim(),
+    cls: document.getElementById('m-class').value,
+    desc: document.getElementById('m-desc').value.trim(),
+    url: document.getElementById('m-url').value.trim(),
+    icon: document.getElementById('m-icon').value.trim() || '📄'
+  };
+  if (!m.title) { showToast('Please enter a title!', true); return; }
+  if (id === -1) data.materials.push(m);
+  else { const i = data.materials.findIndex(x=>x.id===id); data.materials[i] = m; }
+  closeModal('material-modal'); renderMaterials(); updateStats();
+  document.getElementById('mat-edit-id').value = '-1';
+  showToast('✅ Material saved!');
+}
+function editMaterial(id) {
+  const m = data.materials.find(x=>x.id===id);
+  document.getElementById('mat-edit-id').value = id;
+  document.getElementById('m-title').value = m.title;
+  document.getElementById('m-class').value = m.cls;
+  document.getElementById('m-desc').value = m.desc;
+  document.getElementById('m-url').value = m.url;
+  document.getElementById('m-icon').value = m.icon;
+  openModal('material-modal');
+}
+
+// ── MCQ CRUD ──
+function saveMCQ() {
+  const id = parseInt(document.getElementById('mcq-edit-id').value);
+  const q = {
+    id: id === -1 ? data.nextId++ : id,
+    topic: document.getElementById('q-topic').value.trim(),
+    cls: document.getElementById('q-class').value,
+    q: document.getElementById('q-text').value.trim(),
+    opts: [
+      document.getElementById('q-a').value.trim(),
+      document.getElementById('q-b').value.trim(),
+      document.getElementById('q-c').value.trim(),
+      document.getElementById('q-d').value.trim(),
+    ],
+    correct: parseInt(document.getElementById('q-correct').value),
+    explanation: document.getElementById('q-explanation').value.trim()
+  };
+  if (!q.q || !q.opts[0]) { showToast('Please fill the question and options!', true); return; }
+  if (id === -1) data.mcqs.push(q);
+  else { const i = data.mcqs.findIndex(x=>x.id===id); data.mcqs[i] = q; }
+  closeModal('mcq-modal'); renderMCQs(); updateStats();
+  document.getElementById('mcq-edit-id').value = '-1';
+  showToast('✅ Question saved!');
+}
+function editMCQ(id) {
+  const q = data.mcqs.find(x=>x.id===id);
+  document.getElementById('mcq-edit-id').value = id;
+  document.getElementById('q-topic').value = q.topic;
+  document.getElementById('q-class').value = q.cls;
+  document.getElementById('q-text').value = q.q;
+  document.getElementById('q-a').value = q.opts[0]||'';
+  document.getElementById('q-b').value = q.opts[1]||'';
+  document.getElementById('q-c').value = q.opts[2]||'';
+  document.getElementById('q-d').value = q.opts[3]||'';
+  document.getElementById('q-correct').value = q.correct;
+  document.getElementById('q-explanation').value = q.explanation||'';
+  openModal('mcq-modal');
+}
+
+// ── DELETE ──
+function deleteItem(type, id) {
+  if (!confirm('Delete this item?')) return;
+  data[type] = data[type].filter(x => x.id !== id);
+  renderAll();
+  showToast('🗑️ Deleted!');
+}
+
+// ── TOAST ──
+function showToast(msg, isError=false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.background = isError ? 'var(--red)' : 'var(--green)';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ── EXPORT ──
+function generateCode() {
+  const videoCards = data.videos.map(v => `
+      <div class="video-card" onclick="window.open('${v.url}','_blank')">
+        <div class="video-thumb">
+          <div class="play-btn">▶</div>
+          <span class="thumb-icon">${v.icon}</span>
+        </div>
+        <div class="video-info">
+          <p class="video-tag">${v.topic} · ${v.cls}</p>
+          <p class="video-title">${v.title}</p>
+          <p class="video-meta">${v.duration} · GravityVerse</p>
+        </div>
+      </div>`).join('\n');
+
+  const matCards = data.materials.map(m => `
+      <div class="material-card">
+        <div class="mat-icon">${m.icon}</div>
+        <div class="mat-tag">${m.cls}</div>
+        <p class="mat-title">${m.title}</p>
+        <p class="mat-desc">${m.desc}</p>
+        <a class="mat-download" href="${m.url}" download>⬇ Download PDF</a>
+      </div>`).join('\n');
+
+  const mcqJS = JSON.stringify(data.mcqs.map(q => ({
+    topic: `Physics · ${q.topic}`,
+    q: q.q, opts: q.opts, correct: q.correct, explanation: q.explanation
+  })), null, 2);
+
+  const code = `<!-- VIDEOS SECTION - paste inside .videos-grid -->
+${videoCards}
+
+<!-- MATERIALS SECTION - paste inside .materials-grid -->
+${matCards}
+
+<!-- MCQ DATA - replace the 'questions' array in your script -->
+const questions = ${mcqJS};`;
+
+  document.getElementById('code-output').style.display = 'block';
+  document.getElementById('code-box').textContent = code;
+  showToast('✅ Code generated!');
+}
+
+function copyCode() {
+  const text = document.getElementById('code-box').textContent;
+  navigator.clipboard.writeText(text).then(() => showToast('📋 Copied to clipboard!'));
+}
+</script>
+</body>
+</html>
